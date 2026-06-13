@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"D:\\\\01_Kuliah\\\\Semester_6\\\\Pemograman_game\\\\whisperin_dolls\" -Recurse -Depth 5 | Where-Object { $_.PSIsContainer } | Select-Object FullName | Format-Table -AutoSize)"
+    ]
+  }
+}
