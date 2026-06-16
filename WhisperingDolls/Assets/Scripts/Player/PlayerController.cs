@@ -18,9 +18,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float crouchHeight = 1f;
 
     [Header("Camera")]
-    [SerializeField] Transform cameraTransform;
+    [SerializeField] Transform cameraTransform; // WAJIB assign di Inspector: drag child Camera ke sini
     [SerializeField] float mouseSensitivity = 2f;
     [SerializeField] float maxLookAngle = 80f;
+
+    [Header("Jump")]
+    [SerializeField] float jumpForce = 4f;
 
     CharacterController controller;
     float currentStamina;
@@ -34,9 +37,10 @@ public class PlayerController : MonoBehaviour
     public float MaxStamina => maxStamina;
     public bool IsCrouching => isCrouching;
     public bool IsRunning { get; private set; }
+    public bool IsJumping { get; private set; }
 
-    // Dipakai GhostDetection: 0 = diam/jongkok, 0.5 = jalan, 1 = lari
-    public float NoiseLevel => IsRunning ? 1f : isCrouching ? 0f : 0.5f;
+    // Dipakai GhostDetection: 0 = diam/jongkok, 0.5 = jalan, 1 = lari/lompat
+    public float NoiseLevel => (IsRunning || IsJumping) ? 1f : isCrouching ? 0f : 0.5f;
 
     void Awake()
     {
@@ -63,13 +67,15 @@ public class PlayerController : MonoBehaviour
 
     void HandleMouseLook()
     {
+        if (cameraTransform == null) return; // cameraTransform belum di-assign di Inspector
+
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
         float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
 
-        // Rotasi badan kiri-kanan
-        transform.Rotate(Vector3.up * mouseX);
+        // Rotasi badan player kiri-kanan (360 derajat bebas, tidak di-clamp)
+        transform.Rotate(Vector3.up * mouseX, Space.World);
 
-        // Rotasi kamera atas-bawah (clamp agar tidak balik)
+        // Rotasi kamera atas-bawah (clamp -80 s/d 80 agar tidak balik)
         cameraXRotation -= mouseY;
         cameraXRotation = Mathf.Clamp(cameraXRotation, -maxLookAngle, maxLookAngle);
         cameraTransform.localRotation = Quaternion.Euler(cameraXRotation, 0f, 0f);
@@ -112,9 +118,20 @@ public class PlayerController : MonoBehaviour
         Vector3 moveDir = transform.right * h + transform.forward * v;
         moveDir = Vector3.ClampMagnitude(moveDir, 1f); // diagonal tidak lebih cepat
 
+        // Jump
+        if (controller.isGrounded)
+        {
+            IsJumping = false;
+            if (verticalVelocity < 0f) verticalVelocity = -2f;
+
+            if (Input.GetKeyDown(KeyCode.Space) && !isCrouching)
+            {
+                verticalVelocity = jumpForce;
+                IsJumping = true;
+            }
+        }
+
         // Gravity
-        if (controller.isGrounded && verticalVelocity < 0f)
-            verticalVelocity = -2f;
         verticalVelocity += gravity * Time.deltaTime;
 
         Vector3 velocity = moveDir * speed + Vector3.up * verticalVelocity;

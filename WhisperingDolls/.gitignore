@@ -7,19 +7,28 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 
-# Memory dumps
-*.stackdump
+# Visual Studio / Rider generated (auto-dibuat Unity, tidak perlu di-commit)
+*.csproj
+*.sln
+*.slnx
 
-# Windows temp files
+# Asset pack terlalu besar (2.7 GB) - download manual dari Unity Asset Store
+Assets/Flooded_Grounds/
+Assets/Flooded_Grounds.meta
+
+# File backup & recovery (tidak berguna di repo)
+Assets/_Recovery/
+Assets/SampleScene_Backup.unity
+Assets/SampleScene_Backup.unity.meta
+Assets/_TerrainAutoUpgrade/
+Assets/_TerrainAutoUpgrade.meta
+
+# Folder kosong
+Assets/Dnk_Dev/
+Assets/Dnk_Dev.meta
+
+# OS temp files
+*.stackdump
 Thumbs.db
 Desktop.ini
-
-# Mac temp files
 .DS_Store
-
-# Git LFS (sangat disarankan)
-*.fbx filter=lfs diff=lfs merge=lfs -text
-*.obj filter=lfs diff=lfs merge=lfs -text
-*.glb filter=lfs diff=lfs merge=lfs -text
-*.png filter=lfs diff=lfs merge=lfs -text
-*.psd filter=lfs diff=lfs merge=lfs -text

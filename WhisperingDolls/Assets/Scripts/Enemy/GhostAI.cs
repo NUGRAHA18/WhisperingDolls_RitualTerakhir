@@ -32,6 +32,7 @@ public class GhostAI : MonoBehaviour
     int currentWaypointIndex;
     bool isWaitingAtWaypoint;
     float loseSightTimer;
+    bool playerCaught;
 
     public GhostState CurrentState => currentState;
 
@@ -40,6 +41,14 @@ public class GhostAI : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         detection = GetComponent<GhostDetection>();
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
+    }
+
+    void Start()
+    {
+        if (waypoints != null && waypoints.Length > 0 && agent.isOnNavMesh)
+        {
+            agent.SetDestination(waypoints[0].position);
+        }
     }
 
     void Update()
@@ -66,10 +75,12 @@ public class GhostAI : MonoBehaviour
             return;
         }
 
-        if (waypoints.Length == 0 || isWaitingAtWaypoint) return;
-
-        if (!agent.pathPending && agent.remainingDistance < 0.5f)
+        if (waypoints == null || waypoints.Length == 0 || isWaitingAtWaypoint) return;
+        
+        if (agent.enabled && agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance < 0.5f)
+        {
             StartCoroutine(MoveToNextWaypoint());
+        }
     }
 
     void UpdateChase()
@@ -77,30 +88,26 @@ public class GhostAI : MonoBehaviour
         agent.speed = chaseSpeed;
         agent.SetDestination(player.position);
 
-        if (Vector3.Distance(transform.position, player.position) <= catchDistance)
+        if (!playerCaught && Vector3.Distance(transform.position, player.position) <= catchDistance)
         {
+            playerCaught = true;
             GameManager.Instance.GameOver();
-            return;
-        }
-
-        if (!detection.CanSeePlayer() && !detection.CanHearPlayer())
-        {
-            loseSightTimer += Time.deltaTime;
-            if (loseSightTimer >= loseSightTime)
-                SetState(GhostState.Patrol);
-        }
-        else
-        {
-            loseSightTimer = 0f;
+            EndingManager.Instance?.ShowGameOver();
         }
     }
 
     IEnumerator MoveToNextWaypoint()
     {
         isWaitingAtWaypoint = true;
-        agent.SetDestination(waypoints[currentWaypointIndex].position);
+        
+        if (agent.enabled && agent.isOnNavMesh)
+        {
+            agent.SetDestination(waypoints[currentWaypointIndex].position);
+        }
 
-        yield return new WaitUntil(() => !agent.pathPending && agent.remainingDistance < 0.5f);
+        // Diperbaiki: Pengecekan keaktifan agen ditaruh di awal agar aman dari error remainingDistance
+        yield return new WaitUntil(() => !agent.isActiveAndEnabled || (agent.isOnNavMesh && !agent.pathPending && agent.remainingDistance < 0.5f));
+        
         yield return new WaitForSeconds(waypointWaitTime);
 
         currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Length;
@@ -116,7 +123,6 @@ public class GhostAI : MonoBehaviour
         SetState(GhostState.Patrol);
     }
 
-    // Pemain tekan E saat sedang dikejar dan punya boneka baik → ghost tenang
     void HandleGiveDollInput()
     {
         if (!Input.GetKeyDown(KeyCode.E)) return;
@@ -135,8 +141,18 @@ public class GhostAI : MonoBehaviour
     {
         currentState = newState;
         loseSightTimer = 0f;
+
         if (newState == GhostState.Patrol)
+        {
             isWaitingAtWaypoint = false;
+
+            // Diperbaiki: Typo '&&s' sudah diganti menjadi '&&' yang benar
+            if (waypoints.Length > 0 && agent.enabled && agent.isOnNavMesh)
+            {
+                agent.SetDestination(waypoints[currentWaypointIndex].position);
+            }
+        }
+
         Debug.Log("[Ghost] State → " + newState);
     }
 }
